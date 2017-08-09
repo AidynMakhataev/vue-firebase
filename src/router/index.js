@@ -18,7 +18,14 @@ export default new Router({
     },
     {
       path: '/',
-      component: Chat
+      component: Chat,
+      beforeEnter: (to, from, next) => {
+        if(!firebase.auth().currentUser) {
+          next('/login')
+        } else {
+          next()
+        }
+      }
     }
   ]
 })

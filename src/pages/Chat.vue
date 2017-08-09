@@ -1,9 +1,17 @@
 <template>
     <v-container>
         <v-layout row>
-            <v-flex xs12 >
-                <h4>Chat</h4>
-            </v-flex>
+            <sidebar></sidebar>
+            <messages></messages>
         </v-layout>
     </v-container>
 </template>
+
+<script>
+    import Sidebar from '../components/Sidebar'
+    import Messages from '../components/Messages'
+    export default {
+        name: 'chat',
+        components: {Sidebar, Messages}
+    }
+</script>

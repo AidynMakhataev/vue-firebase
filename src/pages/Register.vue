@@ -3,15 +3,15 @@
         <v-layout row>
             <v-flex xs12 sm4 offset-sm4>
                 <v-card>
-                    <v-toolbar class="cyan" dark>
+                    <v-toolbar class="teal" dark>
                         <v-layout row>
                             <v-flex xs12>
-                                <v-toolbar-title>Master & Padavan App - Регистрация</v-toolbar-title>
+                                <v-toolbar-title>Регистрация</v-toolbar-title>
                             </v-flex>
                         </v-layout>
                     </v-toolbar>
                     <v-card-text>
-                        <v-container>
+                        <v-container >
                             <v-layout row>
                                 <v-flex xs12 sm8 offset-sm2>
                                     <v-text-field label="Ваше имя" v-model.trim="name" required></v-text-field>
@@ -24,17 +24,22 @@
                             </v-layout>
                             <v-layout row>
                                 <v-flex xs12 sm8 offset-sm2>
-                                    <v-text-field label="Пароль" v-model="password" type="password" :rules="[passwordLength]" required></v-text-field>
+                                    <v-text-field label="Пароль" v-model.trim="password" type="password" :rules="[passwordLength]" required></v-text-field>
                                 </v-flex>
                             </v-layout>
                             <v-layout row>
                                 <v-flex xs12 sm8 offset-sm2>
-                                    <v-text-field label="Подтвердите пароль" v-model="confirmPassword" type="password"  :rules="[comparePasswords]"></v-text-field>
+                                    <v-text-field label="Подтвердите пароль" v-model.trim="confirmPassword" type="password"  :rules="[comparePasswords]"></v-text-field>
                                 </v-flex>
                             </v-layout>
                             <v-layout row>
                                 <v-flex xs12 sm8 offset-sm2>
-                                    <v-btn class="cyan white--text" large round @click.prevent="register" :disabled="!formIsValid">Регистрация</v-btn>
+                                    <v-btn class="teal white--text" large round @click.prevent="register" :disabled="!formIsValid" :loading="isLoading">Регистрация</v-btn>
+                                </v-flex>
+                            </v-layout>
+                            <v-layout row v-if="alert">
+                                <v-flex xs12 sm8 offset-sm2 v-for="error in errors" :key="error.message">
+                                    <v-alert error dismissible v-model="alert">{{ error }}</v-alert>
                                 </v-flex>
                             </v-layout>
                         </v-container>
@@ -46,6 +51,7 @@
 </template>
 
 <script>
+    import md5 from 'md5'
     export default {
         name: 'register',
         data () {
@@ -53,7 +59,11 @@
                 name: '',
                 email: '',
                 password: '',
-                confirmPassword: ''
+                confirmPassword: '',
+                alert: false,
+                errors: [],
+                usersRef: firebase.database().ref('users'),
+                isLoading: false
             }
         },
         computed: {
@@ -74,12 +84,36 @@
         methods: {
             register () {
                 if(this.formIsValid) {
+                    this.isLoading = true
                     firebase.auth().createUserWithEmailAndPassword(this.email, this.password).then(user => {
-                        console.log('Yeaaaah' + user.email);
+
+                        user.updateProfile({
+                            displayName: this.name,
+                            photoURL: "http://www.lovemarks.com/wp-content/uploads/profile-avatars/default-avatar-rapper-guy.png"
+                        }).then( () => {
+                            this.saveUserToUsersRef(user).then( () => {
+                                this.$store.dispatch('setUser', user);
+                                this.$router.push('/');
+                            })
+                        }, error => {
+                            console.log(error);
+                            this.errors.push(error.message);
+                            this.isLoading = false;
+                            this.alert = true;
+                        })
                     }).catch(error => {
                         console.log(error);
+                        this.errors.push(error.message);
+                        this.isLoading = false;
+                        this.alert = true;
                     })
                 }
+            },
+            saveUserToUsersRef(user) {
+                return this.usersRef.child(user.uid).set({
+                    name: user.displayName,
+                    avatar: user.photoURL
+                })
             }
         }
     }

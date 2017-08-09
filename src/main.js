@@ -5,6 +5,7 @@ import Vuetify from 'vuetify'
 import App from './App'
 import router from './router'
 import firebase from 'firebase'
+import store from './store'
 
 Vue.use(Vuetify)
 Vue.config.productionTip = false
@@ -22,9 +23,18 @@ firebase.initializeApp(config);
 
 window.firebase = firebase
 /* eslint-disable no-new */
-new Vue({
-  el: '#app',
-  router,
-  template: '<App/>',
-  components: { App }
+
+const unsubscribe = firebase.auth().onAuthStateChanged(user => {
+    store.dispatch('setUser', user)
+
+    new Vue({
+        el: '#app',
+        router,
+        template: '<App/>',
+        components: { App },
+        store
+    })
+
+    unsubscribe()
 })
+
