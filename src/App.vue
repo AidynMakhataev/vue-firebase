@@ -96,7 +96,8 @@
               { picture: 48, text: 'Xbox Ahoy' },
               { picture: 58, text: 'Nokia' },
               { picture: 78, text: 'MKBHD' },
-          ]
+          ],
+          presenceRef: firebase.database().ref('presence')
       }
     },
     computed: {
@@ -104,6 +105,7 @@
     },
     methods: {
         logout () {
+            this.presenceRef.child(this.currentUser.uid).remove()
             firebase.auth().signOut()
             this.$store.dispatch('setUser', null)
             this.$router.push('/login')

@@ -1,46 +1,92 @@
 <template>
     <v-list subheader>
-        <v-subheader>Recent chat</v-subheader>
-        <v-list-tile avatar v-for="item in items" v-bind:key="item.title">
+        <v-subheader>Пользователи</v-subheader>
+        <v-list-tile avatar v-for="user in users" v-bind:key="user.uid">
             <v-list-tile-avatar>
-                <img v-bind:src="item.avatar"/>
+                <img v-bind:src="user.avatar"/>
             </v-list-tile-avatar>
             <v-list-tile-content>
-                <v-list-tile-title v-html="item.title"></v-list-tile-title>
+                <v-list-tile-title v-html="user.name"></v-list-tile-title>
             </v-list-tile-content>
+
             <v-list-tile-action>
-                <v-icon v-bind:class="[item.active ? 'teal--text' : 'grey--text']">chat_bubble</v-icon>
+                <v-icon :class="{'green--text' : isOnline(user), 'red--text': !isOnline(user)}">chat_bubble</v-icon>
             </v-list-tile-action>
         </v-list-tile>
     </v-list>
 </template>
 
 <script>
+
+    import {mapGetters} from 'vuex'
+
     export default {
         name: 'connected-user',
         data () {
             return {
-                items: [
-                    {
-                        active: true,
-                        title: 'Jason Oner',
-                        avatar: 'http://www.lovemarks.com/wp-content/uploads/profile-avatars/default-avatar-rapper-guy.png'
-                    },
-                    {
-                        active: true,
-                        title: 'Ranee Carlson',
-                        avatar: 'http://www.lovemarks.com/wp-content/uploads/profile-avatars/default-avatar-rapper-guy.png'
-                    },
-                    {
-                        title: 'Cindy Baker',
-                        avatar: 'http://www.lovemarks.com/wp-content/uploads/profile-avatars/default-avatar-rapper-guy.png'
-                    },
-                    {
-                        title: 'Ali Connors',
-                        avatar: 'http://www.lovemarks.com/wp-content/uploads/profile-avatars/default-avatar-rapper-guy.png'
-                    },
-                ],
+                users: [],
+                usersRef: firebase.database().ref('users'),
+                connectedRef: firebase.database().ref('.info/connected'),
+                presenceRef: firebase.database().ref('presence')
             }
+        },
+        computed: {
+            ...mapGetters(['currentUser'])
+        },
+        mounted() {
+            this.addListeners()
+        },
+        methods: {
+            addListeners () {
+                this.usersRef.on('child_added', snap => {
+                    if(this.currentUser.uid !== snap.key) {
+                        let user = snap.val()
+                        user['uid'] = snap.key
+                        user['status'] = 'offline'
+                        this.users.push(user)
+                    }
+                })
+
+                //check user status
+                this.presenceRef.on('child_added', snap => {
+                    if(this.currentUser.uid !== snap.key) {
+                        this.addStatusToUser(snap.key)
+                    }
+                })
+
+                this.presenceRef.on('child_removed', snap => {
+                    if(this.currentUser.uid !== snap.key) {
+                        this.addStatusToUser(snap.key, false)
+                    }
+                })
+
+                this.connectedRef.on('value', snap => {
+                    if(snap.val() === true) {
+                        let ref = this.presenceRef.child(this.currentUser.uid)
+                        ref.set(true)
+                        ref.onDisconnect().remove( err => {
+                            if( err !== null) console.log(err)
+                        })
+                    }
+                })
+            },
+            addStatusToUser (userId, connected = true) {
+                let index = this.users.findIndex( user => user.uid === userId);
+                if(index !== -1) {
+                    connected === true ? this.users[index].status = 'online' : this.users[index].status = 'offline'
+                }
+            },
+            isOnline(user) {
+                return user.status === 'online'
+            },
+            detachListeners () {
+                this.usersRef.off();
+                this.presenceRef.off();
+                this.connectedRef.off();
+            }
+        },
+        beforeDestroy () {
+            this.detachListeners()
         }
     }
 </script>

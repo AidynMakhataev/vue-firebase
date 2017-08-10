@@ -16,10 +16,11 @@
 </template>
 
 <script>
-    import ConnectedUser from '../components/sidebar/ConnectedUser.vue'
-    import Channels from '../components/sidebar/Channels.vue'
+    import ConnectedUser from './ConnectedUser.vue'
+    import Channels from './Channels.vue'
+    import Users from './Users.vue'
     export default {
         name: 'sidebar',
-        components: {ConnectedUser, Channels}
+        components: {ConnectedUser, Channels, Users}
     }
 </script>
