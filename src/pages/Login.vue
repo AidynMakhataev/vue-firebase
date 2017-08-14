@@ -12,6 +12,7 @@
                     </v-toolbar>
                     <v-card-text>
                         <v-container>
+                            <form @keyup.enter="login">
                             <v-layout row>
                                 <v-flex xs12 sm8 offset-sm2>
                                     <v-text-field label="Email" v-model.trim="email" type="email" required></v-text-field>
@@ -24,7 +25,7 @@
                             </v-layout>
                             <v-layout row>
                                 <v-flex xs12 sm8 offset-sm2>
-                                    <v-btn class="teal white--text" large round @click.prevent="login"  :loading="isLoading">Войти</v-btn>
+                                    <v-btn class="teal white--text" large round @click.prevent="login"  :loading="isLoading" >Войти</v-btn>
                                 </v-flex>
                             </v-layout>
                             <v-layout row v-if="alert">
@@ -32,6 +33,7 @@
                                     <v-alert error dismissible v-model="alert">{{ error }}</v-alert>
                                 </v-flex>
                             </v-layout>
+                            </form>
                         </v-container>
                     </v-card-text>
                 </v-card>

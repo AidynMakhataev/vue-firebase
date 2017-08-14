@@ -7,7 +7,8 @@
                 </div>
             </div>
             <div class="text_wrapper">
-                <div class="text" v-text="message.content"></div>
+                <div class="text" v-if="!isFile(message)">{{  message.content }}</div>
+                <img :src="message.image" alt="image" class="message-image" v-else>
                 <div class="date">{{ message.timestamp | fromNow }}</div>
             </div>
 
@@ -20,11 +21,13 @@
     export default {
         name: 'single-message',
         props: ['message'],
-        mounted() {
-            console.log(this.message)
-        },
         computed: {
             ...mapGetters(['currentUser'])
+        },
+        methods: {
+            isFile(message) {
+                return message.content == null && message.image != null
+            }
         },
         filters: {
             fromNow (value) {
@@ -35,6 +38,13 @@
 </script>
 
 <style scoped>
+    .message-image {
+        max-height: 400px;
+        display: inline;
+        margin: 0 auto .5rem auto;
+        width: auto;
+        height: auto;
+    }
     .messages .message {
         clear: both;
         overflow: hidden;

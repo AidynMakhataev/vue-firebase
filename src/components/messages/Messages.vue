@@ -10,12 +10,12 @@
                 <div class="title">Laravel</div>
             </div>
 
-            <ul class="messages">
+            <ul class="messages" id="messageContainer">
                 <transition-group tag="div" name="list">
                     <single-message :message="message" v-for="message in messages" :key="message.id"></single-message>
                 </transition-group>
             </ul>
-            <message-form></message-form>
+            <message-form :get-message-ref="getMessageRef"></message-form>
         </div>
     </v-flex>
 </template>
@@ -31,36 +31,75 @@
         data () {
             return {
                 messagesRef: firebase.database().ref('messages'),
+                privateMessagesRef: firebase.database().ref('privateMessages'),
                 messages: [],
-                channel: null
+                channel: null,
+                listeners: []
             }
         },
         computed: {
-            ...mapGetters(['currentChannel', 'currentUser'])
+            ...mapGetters(['currentChannel', 'currentUser', 'isPrivate']),
+            channelName() {
+                if(this.channel !== null) {
+                    return this.isPrivate ? '@ ' + this.channel.name: '# ' + this.channel.name
+                }
+            }
+        },
+        mounted() {
+            this.scrollToBottom();
         },
        watch: {
          currentChannel () {
-             this.messages = [];
-
              this.detachListeners();
 
              this.addListeners();
-
              this.channel = this.currentChannel
          }
        },
         methods: {
             addListeners () {
-                this.messagesRef.child(this.currentChannel.id).on('child_added', snap => {
-                    let message = snap.val()
-                    message['id'] = snap.key
-                    this.messages.push(message)
+                let ref = this.getMessageRef();
+                ref.child(this.currentChannel.id).on('child_added', snap => {
+                    let message = snap.val();
+                    message['id'] = snap.key;
+                    this.messages.push(message);
+
+                    this.$nextTick( () => {
+                        let elem = document.getElementById('messageContainer');
+                        elem.scrollTop = elem.scrollHeight;
+                    })
                 })
+                this.addToListeners(this.currentChannel.id, ref, 'child_added')
+            },
+            addToListeners(id, ref, event) {
+              let index = this.listeners.findIndex( el => {
+                  return el.id === id && el.ref === ref && el.event === event
+              });
+              if(index === -1) {
+                  this.listeners.push({id: id, ref: ref, event: event})
+              }
             },
             detachListeners () {
-                if(this.channel !== null) {
-                    this.messagesRef.child(this.channel.id).off('child_added')
+
+                this.listeners.forEach( listener => {
+                    listener.ref.child(listener.id).off(listener.event)
+                });
+
+                this.listeners = [];
+                this.messages = [];
+            },
+            getMessageRef () {
+                if(this.isPrivate) {
+                    return this.privateMessagesRef
+                } else {
+                    return this.messagesRef
                 }
+            },
+            scrollToBottom() {
+
+                let elem = document.getElementById('messageContainer');
+                let shouldScroll = elem.scrollTop + elem.clientHeight === elem.scrollHeight;
+                if(!shouldScroll) elem.scrollTop = elem.scrollHeight;
             }
         },
         beforeDestroy () {
